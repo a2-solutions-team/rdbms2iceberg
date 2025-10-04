@@ -405,17 +405,19 @@ public class DataLoad {
 
             final TableIdentifier icebergTable;
             switch (StringUtils.upperCase(cmd.getOptionValue(OPT_ICEBERG_CATALOG_IMPL_SHORT))) {
-                case CATALOG_IMPL_GLUE:
+                case CATALOG_IMPL_GLUE -> {
                     final String glueDb = StringUtils.isBlank(cmd.getOptionValue(OPT_ICEBERG_NAMESPACE_SHORT))
                             ? sourceSchema : cmd.getOptionValue(OPT_ICEBERG_NAMESPACE_SHORT);
                     if ((catalogProps.containsKey(AwsProperties.GLUE_CATALOG_SKIP_NAME_VALIDATION)
                             && Strings.CI.equals(catalogProps.get(AwsProperties.GLUE_CATALOG_SKIP_NAME_VALIDATION), "false"))
                             || (!catalogProps.containsKey(AwsProperties.GLUE_CATALOG_SKIP_NAME_VALIDATION)
                             && !AwsProperties.GLUE_CATALOG_SKIP_NAME_VALIDATION_DEFAULT)) {
-                        LOGGER.warn(
-                                "\n=====================\n"
-                                + "Converting Oracle upper case SCHEMA/TABLE/COLUMN names to AWS Glue lower case names"
-                                + "\n=====================\n");
+                        LOGGER.warn("""
+                                    
+                                    =====================
+                                    Converting Oracle upper case SCHEMA/TABLE/COLUMN names to AWS Glue lower case names
+                                    =====================
+                                    """);
                         icebergTable = TableIdentifier.of(
                                 StringUtils.lowerCase(glueDb), StringUtils.lowerCase(icebergTableName));
                     } else {
@@ -423,56 +425,69 @@ public class DataLoad {
                     }
                     try {
                         if (!AwsUtil.checkAndCreateGlueDbIfMissed(icebergTable.namespace().toString())) {
-                            LOGGER.error(
-                                    "\n=====================\n"
-                                    + "Unable to check or create AWS Glue database {}!"
-                                    + "\n=====================\n",
+                            LOGGER.error("""
+                                         
+                                         =====================
+                                         Unable to check or create AWS Glue database {}!
+                                         =====================
+                                         """,
                                     icebergTable.namespace().toString());
                             System.exit(1);
                         }
                     } catch (IOException ioe) {
-                        LOGGER.error(
-                                "\n=====================\n"
-                                + "AWS  SDK error {}!\n{}\n"
-                                + "\n=====================\n",
+                        LOGGER.error("""
+                                     
+                                     =====================
+                                     AWS  SDK error {}!
+                                     {}
+                                     
+                                     =====================
+                                     """,
                                 ioe.getMessage(), ExceptionUtils.getStackTrace(ioe));
                         System.exit(1);
                     }
-                    break;
-                case CATALOG_IMPL_S3TABLES:
+                }
+                case CATALOG_IMPL_S3TABLES -> {
                     final String s3TablesDb = StringUtils.isBlank(cmd.getOptionValue(OPT_ICEBERG_NAMESPACE_SHORT))
                             ? sourceSchema : cmd.getOptionValue(OPT_ICEBERG_NAMESPACE_SHORT);
-                    LOGGER.warn(
-                            "\n=====================\n"
-                            + "Converting Oracle upper case SCHEMA/TABLE/COLUMN names to AWS S3 Tables lower case names"
-                            + "\n=====================\n");
+                    LOGGER.warn("""
+                                
+                                =====================
+                                Converting Oracle upper case SCHEMA/TABLE/COLUMN names to AWS S3 Tables lower case names
+                                =====================
+                                """);
                     icebergTable = TableIdentifier.of(
                             StringUtils.lowerCase(s3TablesDb), StringUtils.lowerCase(icebergTableName));
                     try {
                         if (!AwsUtil.checkAndCreateS3TablesDbIfMissed(
                                 icebergTable.namespace().toString(),
                                 catalogProps.get(CatalogProperties.WAREHOUSE_LOCATION))) {
-                            LOGGER.error(
-                                    "\n=====================\n"
-                                    + "Unable to check or create AWS S3 Tables namespace {}!"
-                                    + "\n=====================\n",
+                            LOGGER.error("""
+                                         
+                                         =====================
+                                         Unable to check or create AWS S3 Tables namespace {}!
+                                         =====================
+                                         """,
                                     icebergTable.namespace().toString());
                             System.exit(1);
                         }
                     } catch (IOException ioe) {
-                        LOGGER.error(
-                                "\n=====================\n"
-                                + "AWS  SDK error {}!\n{}\n"
-                                + "\n=====================\n",
+                        LOGGER.error("""
+                                     
+                                     =====================
+                                     AWS  SDK error {}!
+                                     {}
+                                     
+                                     =====================
+                                     """,
                                 ioe.getMessage(), ExceptionUtils.getStackTrace(ioe));
                         System.exit(1);
                     }
-                    break;
-                case CATALOG_IMPL_NESSIE:
-                case CATALOG_IMPL_REST:
+                }
+                case CATALOG_IMPL_NESSIE, CATALOG_IMPL_REST -> {
                     final String nessieNamespace = cmd.getOptionValue(OPT_ICEBERG_NAMESPACE_SHORT);
                     if (StringUtils.isBlank(nessieNamespace)) // Nessie namespaces are implicit and do not need to be explicitly created or deleted.
-                    // The create and delete namespace methods are no-ops for the NessieCatalog.
+                        // The create and delete namespace methods are no-ops for the NessieCatalog.
                     {
                         icebergTable = TableIdentifier.of(icebergTableName);
                     } else {
@@ -480,20 +495,22 @@ public class DataLoad {
                                 Namespace.of(StringUtils.split(nessieNamespace, '.')),
                                 StringUtils.lowerCase(icebergTableName));
                     }
-                    break;
-                case CATALOG_IMPL_SNOWFLAKE:
+                }
+                case CATALOG_IMPL_SNOWFLAKE -> {
                     final String snowNamespace = cmd.getOptionValue(OPT_ICEBERG_NAMESPACE_SHORT);
                     if (StringUtils.isBlank(snowNamespace)) {
-                        LOGGER.error(
-                                "\n=====================\n"
-                                + "Must specify namespace for Snowflake catalog!"
-                                + "\n=====================\n");
+                        LOGGER.error("""
+                                     
+                                     =====================
+                                     Must specify namespace for Snowflake catalog!
+                                     =====================
+                                     """);
                         System.exit(1);
                     }
                     icebergTable = TableIdentifier.of(
                             Namespace.of(StringUtils.split(snowNamespace, '.')), icebergTableName);
-                    break;
-                default:
+                }
+                default -> {
                     final Namespace namespace;
                     if (StringUtils.isBlank(cmd.getOptionValue(OPT_ICEBERG_NAMESPACE_SHORT))) {
                         namespace = Namespace.of(sourceSchema);
@@ -501,7 +518,7 @@ public class DataLoad {
                         namespace = Namespace.of(cmd.getOptionValue(OPT_ICEBERG_NAMESPACE_SHORT));
                     }
                     icebergTable = TableIdentifier.of(namespace, icebergTableName);
-                    break;
+                }
             }
 
             String uploadModeValue = cmd.getOptionValue("upload-mode", UPLOAD_DEFAULT_MODE);
@@ -565,10 +582,12 @@ public class DataLoad {
                     maxFileSize = ((Number) cmd.getParsedOptionValue(OPT_ICEBERG_MAX_SIZE_SHORT)).longValue();
                 } catch (ParseException pe) {
                     maxFileSize = MAX_FILE_SIZE;
-                    LOGGER.error(
-                            "\n=====================\n"
-                            + "Unable to parse value '{}' of option '{}'! Default {} will be used."
-                            + "\n=====================\n",
+                    LOGGER.error("""
+                                 
+                                 =====================
+                                 Unable to parse value '{}' of option '{}'! Default {} will be used.
+                                 =====================
+                                 """,
                             cmd.getOptionValue(OPT_ICEBERG_MAX_SIZE_SHORT), OPT_ICEBERG_MAX_SIZE, MAX_FILE_SIZE);
                 }
             } else {
@@ -599,12 +618,14 @@ public class DataLoad {
                                 partThirdParam = Integer.parseInt(partThirdParamTemp);
 
                             } catch (NumberFormatException nfe) {
-                                LOGGER.error(
-                                        "\n=====================\n"
-                                        + "Invalid value {} after the comma in partition type '{}' specified!\n"
-                                        + "The value after the comma should be a valid integer.\n"
-                                        + "Please verify the partition type parameter and try again."
-                                        + "\n=====================\n",
+                                LOGGER.error("""
+                                             
+                                             =====================
+                                             Invalid value {} after the comma in partition type '{}' specified!
+                                             The value after the comma should be a valid integer.
+                                             Please verify the partition type parameter and try again.
+                                             =====================
+                                             """,
                                         partThirdParamTemp, partColumnType);
                                 System.exit(1);
                             }
@@ -612,11 +633,13 @@ public class DataLoad {
                         partColumnNames.add(new ImmutableTriple<>(columnName, partColumnType, partThirdParam));
                     }
                 } else {
-                    LOGGER.error(
-                            "\n=====================\n"
-                            + "Unable to parse from command line values of Apache Iceberg Catalog properties!\n"
-                            + "Please check parameters!"
-                            + "\n=====================\n");
+                    LOGGER.error("""
+                                 
+                                 =====================
+                                 Unable to parse from command line values of Apache Iceberg Catalog properties!
+                                 Please check parameters!
+                                 =====================
+                                 """);
                     System.exit(1);
                 }
             }
@@ -629,11 +652,15 @@ public class DataLoad {
             sdm.loadData();
 
         } catch (SQLException sqle) {
-            LOGGER.error(
-                    "\n=====================\n"
-                    + "Caught SQLException {}!\n"
-                    + "Stack trace details:\n{}\n"
-                    + "\n=====================\n",
+            LOGGER.error("""
+                         
+                         =====================
+                         Caught SQLException {}!
+                         Stack trace details:
+                         {}
+                         
+                         =====================
+                         """,
                     sqle.getMessage(), ExceptionUtils.getStackTrace(sqle));
             System.exit(1);
         }
