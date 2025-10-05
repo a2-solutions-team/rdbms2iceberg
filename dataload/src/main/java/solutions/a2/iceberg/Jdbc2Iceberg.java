@@ -27,6 +27,8 @@ import org.apache.iceberg.Table;
 import org.apache.iceberg.data.GenericRecord;
 import org.apache.iceberg.data.Record;
 import org.apache.iceberg.io.PartitionedFanoutWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BOOLEAN;
@@ -39,9 +41,12 @@ import static java.sql.Types.ROWID;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
 import static java.sql.Types.VARCHAR;
+import static solutions.a2.iceberg.JdbcUtils.getTypeName;
 
 
 public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Jdbc2Iceberg.class);
 
     Jdbc2Iceberg(
             final Connection connection,
@@ -72,49 +77,62 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
             while (rs.next()) {
                 final GenericRecord record = GenericRecord.create(table.schema());
                 for (final Map.Entry<String, int[]> entry : columnsMap.entrySet()) {
-                    final String icebergColumn = StringUtils.lowerCase(entry.getKey());
-                    switch (entry.getValue()[TYPE_POS]) {
-                        case ROWID ->
-                            record.setField(icebergColumn, rs.getString(entry.getKey()));
-                        case BOOLEAN -> {
-                            final boolean dbValue = rs.getBoolean(entry.getKey());
-                            record.setField(icebergColumn,
-                                    rs.wasNull() ? null : dbValue);
+                    try {
+                        final String icebergColumn = StringUtils.lowerCase(entry.getKey());
+                        switch (entry.getValue()[TYPE_POS]) {
+                            case ROWID ->
+                                record.setField(icebergColumn, rs.getString(entry.getKey()));
+                            case BOOLEAN -> {
+                                final boolean dbValue = rs.getBoolean(entry.getKey());
+                                record.setField(icebergColumn,
+                                        rs.wasNull() ? null : dbValue);
+                            }
+                            case INTEGER -> {
+                                final int dbValue = rs.getInt(entry.getKey());
+                                record.setField(icebergColumn,
+                                        rs.wasNull() ? null : dbValue);
+                            }
+                            case BIGINT -> {
+                                final long dbValue = rs.getLong(entry.getKey());
+                                record.setField(icebergColumn,
+                                        rs.wasNull() ? null : dbValue);
+                            }
+                            case NUMERIC -> {
+                                final BigDecimal dbValue = rs.getBigDecimal(entry.getKey());
+                                record.setField(icebergColumn,
+                                        rs.wasNull() ? null : dbValue);
+                            }
+                            case FLOAT -> {
+                                final float dbValue = rs.getFloat(entry.getKey());
+                                record.setField(icebergColumn,
+                                        rs.wasNull() ? null : dbValue);
+                            }
+                            case DOUBLE -> {
+                                final double dbValue = rs.getDouble(entry.getKey());
+                                record.setField(icebergColumn,
+                                        rs.wasNull() ? null : dbValue);
+                            }
+                            case TIMESTAMP, TIMESTAMP_WITH_TIMEZONE -> {
+                                final Timestamp dbValue = rs.getTimestamp(entry.getKey());
+                                record.setField(icebergColumn,
+                                        rs.wasNull() ? null : dbValue.toLocalDateTime());
+                            }
+                            case VARCHAR ->
+                                record.setField(icebergColumn, rs.getString(entry.getKey()));
+                            case NVARCHAR ->
+                                record.setField(icebergColumn, rs.getNString(entry.getKey()));
                         }
-                        case INTEGER -> {
-                            final int dbValue = rs.getInt(entry.getKey());
-                            record.setField(icebergColumn,
-                                    rs.wasNull() ? null : dbValue);
-                        }
-                        case BIGINT -> {
-                            final long dbValue = rs.getLong(entry.getKey());
-                            record.setField(icebergColumn,
-                                    rs.wasNull() ? null : dbValue);
-                        }
-                        case NUMERIC -> {
-                            final BigDecimal dbValue = rs.getBigDecimal(entry.getKey());
-                            record.setField(icebergColumn,
-                                    rs.wasNull() ? null : dbValue);
-                        }
-                        case FLOAT -> {
-                            final float dbValue = rs.getFloat(entry.getKey());
-                            record.setField(icebergColumn,
-                                    rs.wasNull() ? null : dbValue);
-                        }
-                        case DOUBLE -> {
-                            final double dbValue = rs.getDouble(entry.getKey());
-                            record.setField(icebergColumn,
-                                    rs.wasNull() ? null : dbValue);
-                        }
-                        case TIMESTAMP, TIMESTAMP_WITH_TIMEZONE -> {
-                            final Timestamp dbValue = rs.getTimestamp(entry.getKey());
-                            record.setField(icebergColumn,
-                                    rs.wasNull() ? null : dbValue.toLocalDateTime());
-                        }
-                        case VARCHAR ->
-                            record.setField(icebergColumn, rs.getString(entry.getKey()));
-                        case NVARCHAR ->
-                            record.setField(icebergColumn, rs.getNString(entry.getKey()));
+                    } catch (SQLException sqle) {
+                            LOGGER.error("""
+                                
+                                =====================
+                                ErrorCode={}, SQLState='{}', Message='{}'
+                                during moving of column {} with type {}
+                                =====================
+                                """,
+                                    sqle.getErrorCode(), sqle.getSQLState(), sqle.getMessage(),
+                                    entry.getKey(), getTypeName(entry.getValue()[TYPE_POS]));
+                        throw sqle;
                     }
                 }
                 try {
