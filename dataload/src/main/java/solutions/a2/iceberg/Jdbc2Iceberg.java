@@ -100,10 +100,17 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
                             }
                             case NUMERIC -> {
                                 BigDecimal dbValue = rs.getBigDecimal(entry.getKey());
-                                if (dbValue.scale() > entry.getValue()[SCALE_POS]) {
-                                    LOGGER.warn("Incorrect scale {} for column {}. Scale changed to allowed value of {}.",
-                                            dbValue.scale(), entry.getKey(), entry.getValue()[SCALE_POS]);
-                                    dbValue = dbValue.setScale(entry.getValue()[SCALE_POS], RoundingMode.HALF_UP);
+                                if (dbValue != null) {
+                                    if (dbValue.scale() > entry.getValue()[SCALE_POS]) {
+                                        LOGGER.warn("Incorrect scale {} for column {}. Scale changed to allowed value of {}.",
+                                                dbValue.scale(), entry.getKey(), entry.getValue()[SCALE_POS]);
+                                        dbValue = dbValue.setScale(entry.getValue()[SCALE_POS], RoundingMode.HALF_UP);
+                                    }
+                                    if (dbValue.precision() > entry.getValue()[PRECISION_POS]) {
+                                        LOGGER.warn("Incorrect precision {} for column {}. Value of {} is changed to NULL",
+                                                dbValue.precision(), entry.getValue()[PRECISION_POS], dbValue);
+                                        dbValue = null;
+                                    }
                                 }
                                 record.setField(icebergColumn,
                                         rs.wasNull() ? null : dbValue);
