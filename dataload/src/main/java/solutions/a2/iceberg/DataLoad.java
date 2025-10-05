@@ -364,7 +364,7 @@ public class DataLoad {
                 isTableOrView = true;
                 if (Strings.CS.startsWith(cmd.getOptionValue(OPT_ICEBERG_SOURCE_OBJECT_SHORT), "\"")
                         && Strings.CS.endsWith(cmd.getOptionValue(OPT_ICEBERG_SOURCE_OBJECT_SHORT), "\"")) {
-                    sourceObject = cmd.getOptionValue(OPT_ICEBERG_SOURCE_OBJECT_SHORT);
+                    sourceObject = StringUtils.substringBetween(cmd.getOptionValue(OPT_ICEBERG_SOURCE_OBJECT_SHORT), "");
                 } else {
                     sourceObject = StringUtils.upperCase(cmd.getOptionValue(OPT_ICEBERG_SOURCE_OBJECT_SHORT));
                 }
