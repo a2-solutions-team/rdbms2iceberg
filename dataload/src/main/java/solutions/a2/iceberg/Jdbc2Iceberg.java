@@ -15,6 +15,7 @@ package solutions.a2.iceberg;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -98,7 +99,12 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
                                         rs.wasNull() ? null : dbValue);
                             }
                             case NUMERIC -> {
-                                final BigDecimal dbValue = rs.getBigDecimal(entry.getKey());
+                                BigDecimal dbValue = rs.getBigDecimal(entry.getKey());
+                                if (dbValue.scale() > entry.getValue()[SCALE_POS]) {
+                                    LOGGER.warn("Incorrect scale {} for column {}. Scale changed to allowed value of {}.",
+                                            dbValue.scale(), entry.getKey(), entry.getValue()[SCALE_POS]);
+                                    dbValue = dbValue.setScale(entry.getValue()[SCALE_POS], RoundingMode.HALF_UP);
+                                }
                                 record.setField(icebergColumn,
                                         rs.wasNull() ? null : dbValue);
                             }
