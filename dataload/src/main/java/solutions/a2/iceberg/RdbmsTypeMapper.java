@@ -43,78 +43,82 @@ import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
 import static java.sql.Types.DATE;
 import static java.sql.Types.TIME;
 import static java.sql.Types.BINARY;
-
+import static solutions.a2.iceberg.JdbcUtils.isNumeric;
 
 public class RdbmsTypeMapper {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RdbmsTypeMapper.class);
-	private static final int ICEBERG_MAX_PRECISION = 0x26;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RdbmsTypeMapper.class);
+    private static final int ICEBERG_MAX_PRECISION = 0x26;
 
     private final Map<String, Triple<Integer, Integer, Integer>> exactOverrides = new HashMap<>();
     private final Map<String, Triple<Integer, Integer, Integer>> patternOverrides = new HashMap<>();
-//    private int defaultType = NUMERIC;
     private int defaultPrecision = ICEBERG_MAX_PRECISION;
     private int defaultScale = 0x0A;
 
-	RdbmsTypeMapper(final String defaultNumeric, final String dataTypeMap) {
-		if (StringUtils.isNotBlank(dataTypeMap)) {
-			final String[] overrideArray = StringUtils.split(dataTypeMap, ';');
-			for (final String overrideSpec : overrideArray) {
-				if (StringUtils.isNotBlank(StringUtils.trim(overrideSpec)) && StringUtils.contains(overrideSpec, ':')) {
-					final String columnOrPattern = StringUtils.trim(StringUtils.substringBefore(StringUtils.trim(overrideSpec), ':'));
-					final String overrideData = StringUtils.substringAfter(StringUtils.trim(overrideSpec), ':');
-					if (StringUtils.isNotBlank(columnOrPattern) &&
-						StringUtils.isNotBlank(overrideData)) {
-						if (columnOrPattern.contains("%")) {
-							patternOverrides.put(columnOrPattern, override(StringUtils.substringAfter(StringUtils.trim(overrideSpec), ':')));
-						} else {
-							exactOverrides.put(columnOrPattern, override(StringUtils.substringAfter(StringUtils.trim(overrideSpec), ':')));
-						}
-					} else {
-						//TODO - message
-					}
-				} else {
-					//TODO - message
-				}
-			}
-		}
-		if (StringUtils.isNotBlank(defaultNumeric)) {
-			final Triple<Integer, Integer, Integer> defaultNum = override(defaultNumeric);
-			if (defaultNum != null) {
-				defaultPrecision = defaultNum.getMiddle();
-				defaultScale = defaultNum.getRight();
-			}
-		}
-	}
+    RdbmsTypeMapper(final String defaultNumeric, final String dataTypeMap) {
+        if (StringUtils.isNotBlank(dataTypeMap)) {
+            final String[] overrideArray = StringUtils.split(dataTypeMap, ';');
+            for (final String overrideSpec : overrideArray) {
+                if (StringUtils.isNotBlank(StringUtils.trim(overrideSpec)) && StringUtils.contains(overrideSpec, ':')) {
+                    final String columnOrPattern = StringUtils.trim(StringUtils.substringBefore(StringUtils.trim(overrideSpec), ':'));
+                    final String overrideData = StringUtils.substringAfter(StringUtils.trim(overrideSpec), ':');
+                    if (StringUtils.isNotBlank(columnOrPattern) &&
+                            StringUtils.isNotBlank(overrideData)) {
+                        if (columnOrPattern.contains("%")) {
+                            patternOverrides.put(columnOrPattern, override(StringUtils.substringAfter(StringUtils.trim(overrideSpec), ':')));
+                        } else {
+                            exactOverrides.put(columnOrPattern, override(StringUtils.substringAfter(StringUtils.trim(overrideSpec), ':')));
+                        }
+                    } else {
+                        //TODO - message
+                    }
+                } else {
+                    //TODO - message
+                }
+            }
+        }
+        if (StringUtils.isNotBlank(defaultNumeric)) {
+            final Triple<Integer, Integer, Integer> defaultNum = override(defaultNumeric);
+            if (defaultNum != null) {
+                defaultPrecision = defaultNum.getMiddle();
+                defaultScale = defaultNum.getRight();
+            }
+        }
+    }
 
-	Pair<Integer, Type> icebergType(final String columnName, final int jdbcType, final int precision, final int scale) {
-		if (exactOverrides.containsKey(StringUtils.upperCase(columnName))) {
-			final Triple<Integer, Integer, Integer> typeDef = exactOverrides.get(StringUtils.upperCase(columnName));
-			return icebergType(typeDef.getLeft(), typeDef.getMiddle(), typeDef.getRight());
-		} else {
-			String result = null;
-			for (String pattern : patternOverrides.keySet()) {
-				if (Strings.CS.startsWith(pattern, "%") &&
-						Strings.CS.endsWith(columnName, StringUtils.substringAfter(pattern, '%'))) {
-					// LIKE '%SOMETHING'
-					result = pattern;
-					break;
-				}
-				if (Strings.CS.endsWith(pattern, "%") &&
-						Strings.CS.startsWith(columnName, StringUtils.substringBefore(pattern, '%'))) {
-					// LIKE 'SOMETHING%'
-					result = pattern;
-					break;
-				}
-			}
-			if (result != null) {
-				final Triple<Integer, Integer, Integer> typeDef = patternOverrides.get(result);
-				return icebergType(typeDef.getLeft(), typeDef.getMiddle(), typeDef.getRight());
-			} else {
-				return icebergType(jdbcType, precision, scale);
-			}
-		}  
-	}
+    Pair<Integer, Type> icebergType(final String columnName, final int jdbcType, final int precision, final int scale) {
+        //TODO - type compatibility required!
+        if (isNumeric(jdbcType)) {
+            if (exactOverrides.containsKey(StringUtils.upperCase(columnName))) {        
+                final Triple<Integer, Integer, Integer> typeDef = exactOverrides.get(StringUtils.upperCase(columnName));
+                return icebergType(typeDef.getLeft(), typeDef.getMiddle(), typeDef.getRight());
+            } else {
+                String result = null;
+                for (String pattern : patternOverrides.keySet()) {
+                    if (Strings.CS.startsWith(pattern, "%") &&
+                            Strings.CS.endsWith(columnName, StringUtils.substringAfter(pattern, '%'))) {
+                        // LIKE '%SOMETHING'
+                        result = pattern;
+                        break;
+                    }
+                    if (Strings.CS.endsWith(pattern, "%") &&
+                            Strings.CS.startsWith(columnName, StringUtils.substringBefore(pattern, '%'))) {
+                        // LIKE 'SOMETHING%'
+                        result = pattern;
+                        break;
+                    }
+                }
+                if (result != null) {
+                        final Triple<Integer, Integer, Integer> typeDef = patternOverrides.get(result);
+                        return icebergType(typeDef.getLeft(), typeDef.getMiddle(), typeDef.getRight());
+                } else {
+                    return icebergType(jdbcType, precision, scale);
+                }
+            }  
+        } else {
+            return icebergType(jdbcType, precision, scale);
+        }
+    }
 
 	private Pair<Integer, Type> icebergType(final int jdbcType, final int precision, final int scale) {
 		switch (jdbcType) {
