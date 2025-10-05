@@ -101,9 +101,7 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
                             case NUMERIC -> {
                                 BigDecimal dbValue = rs.getBigDecimal(entry.getKey());
                                 if (dbValue != null) {
-                                    if (dbValue.scale() > entry.getValue()[SCALE_POS]) {
-                                        LOGGER.warn("Incorrect scale {} for column {}. Scale changed to allowed value of {}.",
-                                                dbValue.scale(), entry.getKey(), entry.getValue()[SCALE_POS]);
+                                    if (dbValue.scale() != entry.getValue()[SCALE_POS]) {
                                         dbValue = dbValue.setScale(entry.getValue()[SCALE_POS], RoundingMode.HALF_UP);
                                     }
                                     if (dbValue.precision() > entry.getValue()[PRECISION_POS]) {
@@ -111,9 +109,10 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
                                                 dbValue.precision(), entry.getValue()[PRECISION_POS], dbValue);
                                         dbValue = null;
                                     }
-                                }
-                                record.setField(icebergColumn,
-                                        rs.wasNull() ? null : dbValue);
+                                    record.setField(icebergColumn,
+                                            dbValue == null ? null : dbValue);
+                                } else
+                                    record.setField(icebergColumn, null);
                             }
                             case FLOAT -> {
                                 final float dbValue = rs.getFloat(entry.getKey());
