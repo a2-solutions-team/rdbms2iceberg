@@ -150,8 +150,31 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
                 }
                 try {
                     partitionedFanoutWriter.write(record);
-                } catch (IOException ioe) {
-                    throw new SQLException(ioe);
+                } catch (Exception e) {
+                    StringBuilder sb = new StringBuilder(0x400);
+                    sb
+                            .append("\n=====================\n")
+                            .append(e.getMessage())
+                            .append("\nRecord content:");
+                    for (final Map.Entry<String, int[]> entry : columnsMap.entrySet()) {
+                        final String icebergColumn = StringUtils.lowerCase(entry.getKey());
+                        sb
+                                .append('\n')
+                                .append(icebergColumn)
+                                .append(" with type '")
+                                .append(getTypeName(entry.getValue()[TYPE_POS]))
+                                .append("' precision=")
+                                .append(entry.getValue()[PRECISION_POS])
+                                .append(", scale=")
+                                .append(entry.getValue()[SCALE_POS])
+                                .append(", value=[")
+                                .append(record.getField(icebergColumn))
+                                .append("]");
+                    }
+
+                    sb.append("\n=====================\n");
+                    LOGGER.error(sb.toString());
+                    throw new SQLException(e);
                 }
             }
 
