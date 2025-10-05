@@ -44,6 +44,9 @@ dependencies {
 	// https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
 	implementation("com.microsoft.sqlserver:mssql-jdbc:$msSqlJdbcVersion")
 
+	// https://mvnrepository.com/artifact/com.ibm.db2/jcc
+	implementation("com.ibm.db2:jcc:$ibmDb2JdbcVersion")
+
 	// https://mvnrepository.com/artifact/net.snowflake/snowflake-jdbc
 	implementation("net.snowflake:snowflake-jdbc:$snowflakeJdbcVersion")
  

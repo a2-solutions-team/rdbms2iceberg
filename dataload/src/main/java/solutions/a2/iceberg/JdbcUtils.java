@@ -54,14 +54,17 @@ public class JdbcUtils {
 
     static final int DB_TYPE_ORACLE = 1;
     static final int DB_TYPE_SQLSERVER = 2;
-    static final int DB_TYPE_POSTGRESQL = 3;
-    static final int DB_TYPE_MYSQL = 4;
-    static final int DB_TYPE_SQLITE = 5;
+    static final int DB_TYPE_DB2 = 3;
+    static final int DB_TYPE_POSTGRESQL = 4;
+    static final int DB_TYPE_MYSQL = 5;
+    static final int DB_TYPE_SQLITE = 6;
 
     private static final String DRIVER_ORACLE = "oracle.jdbc.OracleDriver";
     private static final String PREFIX_ORACLE = "jdbc:oracle:";
     private static final String DRIVER_SQLSERVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
     private static final String PREFIX_SQLSERVER = "jdbc:sqlserver:";
+    private static final String DRIVER_DB2 = "com.ibm.db2.jcc.DB2Driver";
+    private static final String PREFIX_DB2 = "jdbc:db2:";
     private static final String DRIVER_POSTGRESQL = "org.postgresql.Driver";
     private static final String PREFIX_POSTGRESQL = "jdbc:postgresql:";
     private static final String DRIVER_MARIADB = "org.mariadb.jdbc.Driver";
@@ -242,6 +245,13 @@ public class JdbcUtils {
                 } catch (ClassNotFoundException cnf) {}
             }
             return DB_TYPE_SQLSERVER;
+        } else if (Strings.CS.startsWith(jdbcUrl, PREFIX_DB2)) {
+            if (!isDriverLoaded(DRIVER_DB2)) {
+                try {
+                     Class.forName(DRIVER_DB2);
+                } catch (ClassNotFoundException cnf) {}
+            }
+            return DB_TYPE_DB2;
         } else if (Strings.CS.startsWith(jdbcUrl, PREFIX_POSTGRESQL)) {
             if (!isDriverLoaded(DRIVER_POSTGRESQL)) {
                 try {
