@@ -2,17 +2,17 @@ image:https://img.shields.io/:license-apache-blue.svg[License,link=https://raw.g
 
 = rdbms2iceberg Data Pipe
 
-== 1. What is Ora2Iceberg?
-rdbms2iceberg is your go-to tool for simplifying data migration! It seamlessly transfers relational database (Oracle, Microsoft SQL Server, PostgreSQL, MySQL, MariaDB) tables and views into Iceberg structures across various data lakes and warehouses—whether cloud-based or on-premises. Supporting a wide range of storage systems, including S3-compatible, HDFS, and local files, it integrates effortlessly with all Iceberg-compatible catalogs. This includes JDBC connections to popular free databases like PostgreSQL and MySQL, making complex Hadoop setups or Spark/Hive unnecessary. Seriously, who wants more Hadoop headaches?
+== 1. What is rdbms2iceberg?
+rdbms2iceberg is your go-to tool for simplifying data migration! It seamlessly transfers relational database (Oracle, Microsoft SQL Server, IBM DB2, PostgreSQL, MySQL, MariaDB) tables and views into Iceberg structures across various data lakes and warehouses—whether cloud-based or on-premises. Supporting a wide range of storage systems, including S3-compatible, HDFS, and local files, it integrates effortlessly with all Iceberg-compatible catalogs. This includes JDBC connections to popular free databases like PostgreSQL and MySQL, making complex Hadoop setups or Spark/Hive unnecessary. Seriously, who wants more Hadoop headaches?
 
 === Who Benefits from rdbms2iceberg?
-* Data Engineers: Effortlessly migrate from legacy Oracle databases to modern systems (finally, something less painful than Mondays!).
+* Data Engineers: Effortlessly transfer data from relational databases to modern systems (finally, something less painful than Mondays!).
 * Cloud Architects: Enable cost-effective and scalable data lakes like AWS Glue and S3Tables.
 * Database Administrators: Simplify schema conversions and data type mappings without breaking a sweat.
 * Analytics Teams: Unlock high-performance querying with Iceberg’s partitioning and indexing. It’s like upgrading from a bicycle to a sports car.
 
 === Key Features
-* Reads data from Oracle Database, Microsoft SQL Server, PostgreSQL, MySQL, MariaD
+* Reads data from Oracle Database, Microsoft SQL Server, IBM DB2, PostgreSQL, MySQL, MariaDB
 * Multi-Catalog Support: Compatible with Glue, Hive, S3Tables, and more.
 * Customizable Data Mappings: Override Oracle-to-Iceberg type mappings with ease.
 * Partitioning Options: Optimize table performance with advanced partitioning strategies.
@@ -29,43 +29,47 @@ rdbms2iceberg is your go-to tool for simplifying data migration! It seamlessly t
 === Installation
 ==== 1. Clone the repository
 ----
-git clone https://github.com/a2solutions/ora2iceberg.git
+git clone https://github.com/a2-solutions-team/rdbms2iceberg.git
 ----
 
 ==== 2. Navigate to the project directory:
 ----
-cd ora2iceberg
+cd rdbms2iceberg
 ----
 
 ==== 3. Build the project:
 ** On Linux/Unix:
 ----
-gradle clean build
+./gradlew clean shadowJar
 ----
 ** On Windows:
 ----
-./gradlew clean build
+gradlew clean shadowJar
 ----
 ==== 4. Run the tool:
 ----
-java -jar build/libs/ora2iceberg.jar
+java -jar dataload/build/libs/dataload-<VERSION>-all.jar
 ----
 === Optional: Validating Secure Dependencies
 Run the following to ensure all dependency libraries are secure:
+** On Linux/Unix:
 ----
-gradle dependencyCheckAnalyze
+./gradlew dependencyCheckAnalyze
+** On Windows:
+----
+gradlew dependencyCheckAnalyze
 ----
 
 == 3. Basic Usage
 === Common assumptions:
-The machine on which you run ora2Iceberg can be: 
+The machine on which you run rdbms2Iceberg can be: 
 
-* Remote or local to the source Oracle database;
+* Remote or local to the source relational database;
 * Remote or local to the destination catalogs;
 * Remote to the destination storage if it supports the network access (S3-compatible, Hadoop, SnowFlake);
 * Local to the destination storage if copying to the plain local file system.
 
-The tool can be run on Linux or Windows in any shell of your choice capable of running Java 11 and later (the popular free JREs like Corretto and Temurin are fully supported).
+The tool can be run on Linux or Windows in any shell of your choice capable of running Java 17 and later (the popular free JREs like Corretto and Temurin are fully supported).
 
 === Scenario 1: Copying the table to AWS S3 Storage and using AWS Glue as catalog.
 This scenario implies copying the Oracle tables to the general AWS S3 storage, that can be further accessed by AWS analytical tools.
@@ -84,8 +88,8 @@ export AWS_REGION=us-east-1
 export AWS_ACCESS_KEY_ID=SOMEKEYYY
 export AWS_SECRET_ACCESS_KEY=SOMESECRET
 
-cd ~/ora2iceberg/build/libs/
-java -jar ora2iceberg-0.8.1.7-all.jar \
+cd ~/rdbms2iceberg/dataload/build/libs/
+java -jar dataload-<VERSION>-all.jar \
 --source-jdbc-url jdbc:oracle:thin:@dbhost:1521/SID \
 --source-user dbuser --source-password hispassword \
 -T glue -C test \
@@ -126,8 +130,8 @@ This scenario is useful if you’re going to access the Iceberg tables locally v
 
 ==== Example: Local Iceberg storage + Nessie catalog on-prem
 ----
-cd ~/ora2iceberg/build/libs/
-java -jar ora2iceberg-0.8.1.7-all.jar \
+cd ~/rdbms2iceberg/dataload/build/libs/
+java -jar dataload-<VERSION>-all.jar \
 --source-jdbc-url jdbc:oracle:thin:@dbhost:1521/SID \
 --source-user dbuser --source-password hispassword \
 -T nessie -C test \
@@ -158,8 +162,8 @@ In the example above, the parameters represent the following:
 
 ==== Example: Local Iceberg storage +  catalog in relational database
 ----
-cd ~/ora2iceberg/build/libs/
-java -jar ora2iceberg-0.8.1.7-all.jar \
+cd ~/rdbms2iceberg/dataload/build/libs/
+java -jar dataload-<VERSION>-all.jar \
 --source-jdbc-url jdbc:oracle:thin:@dbhost:1521/SID \
 --source-user dbuser --source-password hispassword \
 -T jdbc -C test \
@@ -208,8 +212,8 @@ You can use this scenario for transfering the tables to the existing on-prem or 
 export AWS_REGION=us-east-1
 export AWS_ACCESS_KEY_ID=SOMEONESKEY
 export AWS_SECRET_ACCESS_KEY=THEIRSECRET
-cd ~/ora2iceberg/build/libs/
-java -jar ora2iceberg-0.8.1.7-all.jar \
+cd ~/rdbms2iceberg/dataload/build/libs/
+java -jar dataload-<VERSION>-all.jar \
 --source-jdbc-url jdbc:oracle:thin:@dbhost:1521/SID \
 --source-user dbuser --source-password hispassword \
 -T nessie -C test \
@@ -259,8 +263,8 @@ You can use this scenario for transfering the tables to the AWS S3 storage, when
 export AWS_REGION=us-east-1
 export AWS_ACCESS_KEY_ID=AccOuNtKey
 export AWS_SECRET_ACCESS_KEY=OhSecReT
-cd ~/ora2iceberg/build/libs/
-java -jar ora2iceberg-0.8.1.7-all.jar \
+cd ~/rdbms2iceberg/dataload/build/libs/
+java -jar dataload-<VERSION>-all.jar \
 --source-jdbc-url jdbc:oracle:thin:@dbhost:1521/SID \
 --source-user dbuser --source-password hispassword \
 -T hive -C default \
@@ -336,7 +340,7 @@ Override using the -d parameter:
 -d "decimal(20,5)"
 
 === Example:
-java -jar build/libs/ora2iceberg.jar \
+java -jar dataload-<VERSION>-all.jar \
     -d "decimal(20,5)"
 
 == 5. Partitioning
@@ -376,10 +380,10 @@ java -jar build/libs/ora2iceberg.jar \
 |===
 | Short | Long | Explanation | Example
 
-| `-j` | `--source-jdbc-url` | Oracle JDBC URL for the source connection. This parameter is required. | `jdbc:oracle:thin:@localhost:1521:xe`
-| `-u` | `--source-user` | Oracle username for the source connection. | `system`
-| `-p` | `--source-password` | Password for the source Oracle connection. | `password123`
-| `-s` | `--source-schema` | Source schema name. If not specified, the value of `<source-user>` is used. | `HR`
+| `-j` | `--source-jdbc-url` | RDBMS JDBC URL for the source connection. This parameter is required. | `jdbc:oracle:thin:@localhost:1521:xe`
+| `-u` | `--source-user` | RDBMS username for the source connection. | `system`
+| `-p` | `--source-password` | Password for the source RDBMS connection. | `password123`
+| `-s` | `--source-schema` | Source schema name. If not specified, the value `public` is used for PostgreSQL, and the value of `<source-user>` is used for other supported databases. | `HR`
 | `-o` | `--source-object` | Name of the source table, view, or SQL `SELECT` query. *SQL `SELECT` is not implemented yet.* | `employees` or `SELECT * FROM employees WHERE department_id = 10`
 | `-w` | `--where-clause` | Optional `WHERE` clause for the `<source-object>`. Valid only if `<source-object>` points to a table or view. | `WHERE salary > 50000`
 |===
