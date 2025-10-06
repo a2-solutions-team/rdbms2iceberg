@@ -385,7 +385,7 @@ java -jar build/libs/ora2iceberg.jar \
 | `-j` | `--source-jdbc-url` | RDBMS JDBC URL for the source connection. This parameter is required. | `jdbc:oracle:thin:@localhost:1521:xe`
 | `-u` | `--source-user` | RDBMS username for the source connection. | `system`
 | `-p` | `--source-password` | Password for the source RDBMS connection. | `password123`
-| `-s` | `--source-schema` | Source schema name. If not specified, the value `public` is used for PostgreSQL, and the value of `<source-user>` is used for other supported databases. | `HR`
+| `-s` | `--source-schema` | Source schema name. If not specified, the value `dbo` is used for Microsoft SQL Server, the value `public` is used for PostgreSQL, and the value of `<source-user>` is used for other supported databases. | `HR`
 | `-o` | `--source-object` | Name of the source table, view, or SQL `SELECT` query. *SQL `SELECT` is not implemented yet.* | `employees` or `SELECT * FROM employees WHERE department_id = 10`
 | `-w` | `--where-clause` | Optional `WHERE` clause for the `<source-object>`. Valid only if `<source-object>` points to a table or view. | `WHERE salary > 50000`
 |===
