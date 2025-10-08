@@ -872,6 +872,7 @@ public class DataLoad {
         
         final Option maxRowsPerSnapshot = Option.builder(OPT_ICEBERG_MAX_ROWS_SHORT)
                 .longOpt(OPT_ICEBERG_MAX_ROWS)
+                .type(Integer.class)
                 .hasArg(true)
                 .required(false)
                 .desc(
