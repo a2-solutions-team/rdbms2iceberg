@@ -18,6 +18,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.apache.commons.lang3.StringUtils;
+
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static solutions.a2.iceberg.DataLoad.ROWID_KEY;
 
 public abstract class Rdbms2IcebergBase {
@@ -55,18 +58,22 @@ public abstract class Rdbms2IcebergBase {
         if (rowidPseudoKey) {
             ps = connection.prepareStatement(
                 "select ROWIDTOCHAR(ROWID) " + ROWID_KEY + ", T.* from \"" + sourceSchema + "\".\"" + sourceObject + "\" T" +
-                (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
+                    (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause),
+                TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
         } else {
             if (StringUtils.isBlank(sourceSchema)) {
                 ps = connection.prepareStatement(
                         "select * from " + sourceObject +
-                        (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
+                            (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause),
+                        TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
             } else {
                 ps = connection.prepareStatement(
                         "select * from \"" + sourceSchema + "\".\"" + sourceObject + "\"" +
-                        (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
+                            (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause),
+                        TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
             }
         }
+        ps.setFetchSize(0x400);
         rs = ps.executeQuery();
     }
 }
