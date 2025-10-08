@@ -311,7 +311,9 @@ public class StructAndDataMover {
             //TODO
             throw new SQLException("Not supported yet!");
         }
-        dataLoader = Rdbms2IcebergFactory.get(dbMetaData.getConnection(), sourceSchema, sourceObject, whereClause, isTableOrView, rowidPseudoKey);
+        dataLoader = Rdbms2IcebergFactory.get(
+                dbMetaData.getConnection(), sourceSchema, sourceObject,
+                whereClause, isTableOrView, rowidPseudoKey, maxRowsPerSnapshot);
     }
 
     void loadData() throws SQLException {
@@ -326,47 +328,50 @@ public class StructAndDataMover {
         final InternalRecordWrapper recordWrapper = new InternalRecordWrapper(table.schema().asStruct());
 
         if (isTableOrView) {
+            boolean done = false;
+            do {
+                PartitionedFanoutWriter<Record> partitionedFanoutWriter = new PartitionedFanoutWriter<Record>(
+                        table.spec(),
+                        //TODO - only parquet?
+                        FileFormat.PARQUET,
+                        af, off, table.io(),
+                        targetFileSize) {
+                    @Override
+                    protected PartitionKey partition(Record record) {
+                        partitionKey.partition(recordWrapper.wrap(record));
+                        return partitionKey;
+                    }
+                };
 
-            PartitionedFanoutWriter<Record> partitionedFanoutWriter = new PartitionedFanoutWriter<Record>(
-                    table.spec(),
-                    //TODO - only parquet?
-                    FileFormat.PARQUET,
-                    af, off, table.io(),
-                    targetFileSize) {
-                @Override
-                protected PartitionKey partition(Record record) {
-                    partitionKey.partition(recordWrapper.wrap(record));
-                    return partitionKey;
+                done = dataLoader.loadData(table, partitionedFanoutWriter, columnsMap);
+
+                AppendFiles appendFiles = table.newAppend();
+                // submit datafiles to the table
+                try {
+                    Arrays.stream(partitionedFanoutWriter.dataFiles()).forEach(appendFiles::appendFile);
+                } catch (IOException ioe) {
+                    throw new SQLException(ioe);
                 }
-            };
+                Snapshot newSnapshot = appendFiles.apply();
+                appendFiles.commit();
 
-            dataLoader.loadData(table, partitionedFanoutWriter, columnsMap);
-
-            AppendFiles appendFiles = table.newAppend();
-            // submit datafiles to the table
-            try {
-                Arrays.stream(partitionedFanoutWriter.dataFiles()).forEach(appendFiles::appendFile);
-            } catch (IOException ioe) {
-                throw new SQLException(ioe);
-            }
-            Snapshot newSnapshot = appendFiles.apply();
-            appendFiles.commit();
-
-            final StringBuilder sb = new StringBuilder(0x400);
-            sb
+                final StringBuilder sb = new StringBuilder(0x400);
+                sb
                     .append("\n=====================\n")
                     .append("\tSummary data for the operation that produced new snapshot")
                     .append("\nElapsed time: ")
                     .append((System.currentTimeMillis() - startMillis))
                     .append(" ms");
-            newSnapshot.summary().forEach((k, v)
-                    -> sb
+                newSnapshot.summary().forEach((k, v)
+                        -> sb
                             .append('\n')
                             .append(k)
                             .append("\t:")
                             .append(v));
-            sb.append("\n=====================\n");
-            LOGGER.info(sb.toString());
+                sb.append("\n=====================\n");
+                LOGGER.info(sb.toString());
+            } while (!done);
+
 
         } else {
             //TODO

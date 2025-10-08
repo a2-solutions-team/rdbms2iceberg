@@ -35,6 +35,8 @@ public abstract class Rdbms2IcebergBase {
     protected final boolean isTableOrView;
     protected final PreparedStatement ps;
     protected final ResultSet rs;
+    protected final int maxRowsPerSnapshot;
+    protected int rowCount = 0;
 
     Rdbms2IcebergBase(
             final Connection connection,
@@ -42,12 +44,14 @@ public abstract class Rdbms2IcebergBase {
             final String sourceObject,
             final String whereClause,
             final boolean isTableOrView,
-            final boolean rowidPseudoKey) throws SQLException {
+            final boolean rowidPseudoKey,
+            final int maxRowsPerSnapshot) throws SQLException {
         this.connection = connection;
         this.sourceSchema = sourceSchema;
         this.sourceObject = sourceObject;
         this.whereClause = whereClause;
         this.isTableOrView = isTableOrView;
+        this.maxRowsPerSnapshot = maxRowsPerSnapshot;
         if (rowidPseudoKey) {
             ps = connection.prepareStatement(
                 "select ROWIDTOCHAR(ROWID) " + ROWID_KEY + ", T.* from \"" + sourceSchema + "\".\"" + sourceObject + "\" T" +

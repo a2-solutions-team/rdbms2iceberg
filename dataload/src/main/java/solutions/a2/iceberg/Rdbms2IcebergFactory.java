@@ -25,12 +25,17 @@ public class Rdbms2IcebergFactory {
             final String sourceObject,
             final String whereClause,
             final boolean isTableOrView,
-            final boolean rowidPseudoKey) throws SQLException {
+            final boolean rowidPseudoKey,
+            final int maxRowsPerSnapshot) throws SQLException {
         final String className = connection.getClass().getName();
         if (Strings.CS.startsWith(className, "oracle.jdbc")) {
-            return new Ora2Iceberg(connection, sourceSchema, sourceObject, whereClause, isTableOrView, rowidPseudoKey);
+            return new Ora2Iceberg(
+                    connection, sourceSchema, sourceObject, whereClause,
+                    isTableOrView, rowidPseudoKey, maxRowsPerSnapshot);
         } else {
-            return new Jdbc2Iceberg(connection, sourceSchema, sourceObject, whereClause, isTableOrView, rowidPseudoKey);
+            return new Jdbc2Iceberg(
+                    connection, sourceSchema, sourceObject, whereClause,
+                    isTableOrView, rowidPseudoKey, maxRowsPerSnapshot);
         }
     }
 }

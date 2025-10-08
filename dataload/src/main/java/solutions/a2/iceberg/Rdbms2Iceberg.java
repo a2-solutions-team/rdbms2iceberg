@@ -21,7 +21,7 @@ import org.apache.iceberg.io.PartitionedFanoutWriter;
 
 public interface Rdbms2Iceberg {
  
-    void loadData(
+    boolean loadData(
             Table table,
             PartitionedFanoutWriter<org.apache.iceberg.data.Record> partitionedFanoutWriter,
             Map<String, int[]> columnsMap) throws SQLException;

@@ -56,16 +56,20 @@ public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
             final String sourceObject,
             final String whereClause,
             final boolean isTableOrView,
-            final boolean rowidPseudoKey) throws SQLException {
-        super(connection, sourceSchema, sourceObject, whereClause, isTableOrView, rowidPseudoKey);
+            final boolean rowidPseudoKey,
+            final int maxRowsPerSnapshot) throws SQLException {
+        super(
+                connection, sourceSchema, sourceObject, whereClause,
+                isTableOrView, rowidPseudoKey, maxRowsPerSnapshot);
     }
 
     @Override
-    public void loadData(
+    public boolean loadData(
             final Table table,
             final PartitionedFanoutWriter<Record> partitionedFanoutWriter,
             final Map<String, int[]> columnsMap) throws SQLException {
             while (rs.next()) {
+                rowCount++;
                 final GenericRecord record = GenericRecord.create(table.schema());
                 for (final Map.Entry<String, int[]> entry : columnsMap.entrySet()) {
                     final String icebergColumn = StringUtils.lowerCase(entry.getKey());
@@ -255,10 +259,16 @@ public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
                 } catch (IOException ioe) {
                     throw new SQLException(ioe);
                 }
+
+                if (rowCount == maxRowsPerSnapshot) {
+                    rowCount = 0;
+                    return false;
+                }
             }
 
             rs.close();
             ps.close();
+            return true;
     }
 
     private NUMBER getNUMBER(final String columnName) throws SQLException {
