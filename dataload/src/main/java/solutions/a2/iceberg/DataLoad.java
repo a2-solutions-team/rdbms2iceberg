@@ -302,6 +302,7 @@ public class DataLoad {
         Connection connection = null;
         try {
             connection = DriverManager.getConnection(sourceUrl, sourceUser, sourcePassword);
+            connection.setAutoCommit(false);
         } catch (SQLException sqle) {
             LOGGER.error("""
                          
