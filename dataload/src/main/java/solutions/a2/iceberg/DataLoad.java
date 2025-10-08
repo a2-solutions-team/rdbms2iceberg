@@ -137,6 +137,8 @@ public class DataLoad {
     private static final String OPT_ICEBERG_ID_COLS_SHORT = "I";
     private static final String OPT_ICEBERG_MAX_SIZE = "iceberg-max-file-size";
     private static final String OPT_ICEBERG_MAX_SIZE_SHORT = "Z";
+    private static final String OPT_ICEBERG_MAX_ROWS = "iceberg-max-rows-per-snapshot";
+    private static final String OPT_ICEBERG_MAX_ROWS_SHORT = "M";
 
     @SuppressWarnings("unchecked")
     public static void main(String[] argv) {
@@ -596,6 +598,24 @@ public class DataLoad {
                 maxFileSize = MAX_FILE_SIZE;
             }
 
+            int maxRowsPerSnapshot;
+            if (cmd.hasOption(OPT_ICEBERG_MAX_ROWS_SHORT)) {
+                try {
+                    maxRowsPerSnapshot = ((Number) cmd.getParsedOptionValue(OPT_ICEBERG_MAX_ROWS_SHORT)).intValue();
+                } catch (ParseException pe) {
+                    maxRowsPerSnapshot = Integer.MAX_VALUE;
+                    LOGGER.error("""
+                                 
+                                 =====================
+                                 Unable to parse value '{}' of option '{}'! Default {} will be used.
+                                 =====================
+                                 """,
+                            cmd.getOptionValue(OPT_ICEBERG_MAX_ROWS_SHORT), OPT_ICEBERG_MAX_ROWS_SHORT, Integer.MAX_VALUE);
+                }
+            } else {
+                maxRowsPerSnapshot = Integer.MAX_VALUE;
+            }
+
             String defaultNumeric = cmd.getOptionValue("default-number-type", DEFAULT_NUMBER_FORMAT);
 
             final List<Triple<String, String, Integer>> partColumnNames;
@@ -648,8 +668,9 @@ public class DataLoad {
 
             final RdbmsTypeMapper mapper = new RdbmsTypeMapper(defaultNumeric, dataTypeMap);
             final StructAndDataMover sdm = new StructAndDataMover(
-                    dbMetaData, sourceSchema, sourceObject, whereClause, isTableOrView, icebergTableExists,
-                    catalog, icebergTable, idColumnNames, partColumnNames, maxFileSize, mapper);
+                    dbMetaData, sourceSchema, sourceObject, whereClause,
+                    isTableOrView, icebergTableExists, catalog, icebergTable,
+                    idColumnNames, partColumnNames, maxFileSize, mapper, maxRowsPerSnapshot);
 
             sdm.loadData();
 
@@ -848,6 +869,20 @@ public class DataLoad {
                 .desc("Custom mappings from source types to Iceberg types. Example: \"ZONE_CONTROL:NUMBER=integer; %_ID:NUMBER=long; LOCATOR_%:NUMBER=decimal(38,0)\"")
                 .get();
         options.addOption(dataTypeMap);
+        
+        final Option maxRowsPerSnapshot = Option.builder(OPT_ICEBERG_MAX_ROWS_SHORT)
+                .longOpt(OPT_ICEBERG_MAX_ROWS)
+                .hasArg(true)
+                .required(false)
+                .desc(
+                    """
+                    The maximum number of rows in a Apache Iceberg table snapshot.
+                    This is necessary when working with large source RDBMS tables to prevent java.lang.OutOfMemoryError.
+                    Defaults to Integer.MAX_VALUE(2,147,483,647).
+                    """)
+                .get();
+        options.addOption(maxRowsPerSnapshot);
+
     }
 
 }

@@ -96,7 +96,8 @@ public class StructAndDataMover {
             final Set<String> idColumnNames,
             final List<Triple<String, String, Integer>> partitionDefs,
             final long targetFileSize,
-            final RdbmsTypeMapper mapper) throws SQLException {
+            final RdbmsTypeMapper mapper,
+            final int maxRowsPerSnapshot) throws SQLException {
         columnsMap = new HashMap<>();
         this.isTableOrView = isTableOrView;
         this.targetFileSize = targetFileSize;
