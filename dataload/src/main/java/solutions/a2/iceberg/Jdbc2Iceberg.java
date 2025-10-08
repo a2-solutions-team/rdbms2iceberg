@@ -16,8 +16,6 @@ package solutions.a2.iceberg;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Map;
@@ -55,10 +53,11 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
             final String whereClause,
             final boolean isTableOrView,
             final boolean rowidPseudoKey,
-            final int maxRowsPerSnapshot) throws SQLException {
+            final int maxRowsPerSnapshot,
+            final int fetchSize) throws SQLException {
         super(
                 connection, sourceSchema, sourceObject, whereClause,
-                isTableOrView, rowidPseudoKey, maxRowsPerSnapshot);
+                isTableOrView, rowidPseudoKey, maxRowsPerSnapshot, fetchSize);
     }
 
     @Override

@@ -57,10 +57,11 @@ public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
             final String whereClause,
             final boolean isTableOrView,
             final boolean rowidPseudoKey,
-            final int maxRowsPerSnapshot) throws SQLException {
+            final int maxRowsPerSnapshot,
+            final int fetchSize) throws SQLException {
         super(
                 connection, sourceSchema, sourceObject, whereClause,
-                isTableOrView, rowidPseudoKey, maxRowsPerSnapshot);
+                isTableOrView, rowidPseudoKey, maxRowsPerSnapshot, fetchSize);
     }
 
     @Override

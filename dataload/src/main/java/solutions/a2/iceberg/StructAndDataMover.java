@@ -97,7 +97,8 @@ public class StructAndDataMover {
             final List<Triple<String, String, Integer>> partitionDefs,
             final long targetFileSize,
             final RdbmsTypeMapper mapper,
-            final int maxRowsPerSnapshot) throws SQLException {
+            final int maxRowsPerSnapshot,
+            final int fetchSize) throws SQLException {
         columnsMap = new HashMap<>();
         this.isTableOrView = isTableOrView;
         this.targetFileSize = targetFileSize;
@@ -312,8 +313,8 @@ public class StructAndDataMover {
             throw new SQLException("Not supported yet!");
         }
         dataLoader = Rdbms2IcebergFactory.get(
-                dbMetaData.getConnection(), sourceSchema, sourceObject,
-                whereClause, isTableOrView, rowidPseudoKey, maxRowsPerSnapshot);
+                dbMetaData.getConnection(), sourceSchema, sourceObject, whereClause,
+                isTableOrView, rowidPseudoKey, maxRowsPerSnapshot, fetchSize);
     }
 
     void loadData() throws SQLException {

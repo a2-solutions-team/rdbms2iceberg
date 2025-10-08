@@ -48,7 +48,8 @@ public abstract class Rdbms2IcebergBase {
             final String whereClause,
             final boolean isTableOrView,
             final boolean rowidPseudoKey,
-            final int maxRowsPerSnapshot) throws SQLException {
+            final int maxRowsPerSnapshot,
+            final int fetchSize) throws SQLException {
         this.connection = connection;
         this.sourceSchema = sourceSchema;
         this.sourceObject = sourceObject;
@@ -73,7 +74,7 @@ public abstract class Rdbms2IcebergBase {
                         TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
             }
         }
-        ps.setFetchSize(0x400);
+        ps.setFetchSize(fetchSize);
         rs = ps.executeQuery();
     }
 }

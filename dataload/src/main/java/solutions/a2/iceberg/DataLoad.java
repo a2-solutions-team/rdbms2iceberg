@@ -139,6 +139,8 @@ public class DataLoad {
     private static final String OPT_ICEBERG_MAX_SIZE_SHORT = "Z";
     private static final String OPT_ICEBERG_MAX_ROWS = "iceberg-max-rows-per-snapshot";
     private static final String OPT_ICEBERG_MAX_ROWS_SHORT = "M";
+    private static final String OPT_FETCH_SIZE = "fetch-size";
+    private static final String OPT_FETCH_SIZE_SHORT = "f";
 
     @SuppressWarnings("unchecked")
     public static void main(String[] argv) {
@@ -611,10 +613,25 @@ public class DataLoad {
                                  Unable to parse value '{}' of option '{}'! Default {} will be used.
                                  =====================
                                  """,
-                            cmd.getOptionValue(OPT_ICEBERG_MAX_ROWS_SHORT), OPT_ICEBERG_MAX_ROWS_SHORT, Integer.MAX_VALUE);
+                            cmd.getOptionValue(OPT_ICEBERG_MAX_ROWS_SHORT), OPT_ICEBERG_MAX_ROWS, Integer.MAX_VALUE);
                 }
             } else {
                 maxRowsPerSnapshot = Integer.MAX_VALUE;
+            }
+
+            int fetchSize = 0x400;
+            if (cmd.hasOption(OPT_FETCH_SIZE_SHORT)) {
+                try {
+                    fetchSize = ((Number) cmd.getParsedOptionValue(OPT_FETCH_SIZE_SHORT)).intValue();
+                } catch (ParseException pe) {
+                    LOGGER.error("""
+                                 
+                                 =====================
+                                 Unable to parse value '{}' of option '{}'! Default {} will be used.
+                                 =====================
+                                 """,
+                            cmd.getOptionValue(OPT_FETCH_SIZE_SHORT), OPT_FETCH_SIZE, fetchSize);
+                }
             }
 
             String defaultNumeric = cmd.getOptionValue("default-number-type", DEFAULT_NUMBER_FORMAT);
@@ -671,7 +688,8 @@ public class DataLoad {
             final StructAndDataMover sdm = new StructAndDataMover(
                     dbMetaData, sourceSchema, sourceObject, whereClause,
                     isTableOrView, icebergTableExists, catalog, icebergTable,
-                    idColumnNames, partColumnNames, maxFileSize, mapper, maxRowsPerSnapshot);
+                    idColumnNames, partColumnNames, maxFileSize, mapper,
+                    maxRowsPerSnapshot, fetchSize);
 
             sdm.loadData();
 
@@ -884,6 +902,21 @@ public class DataLoad {
                     """)
                 .get();
         options.addOption(maxRowsPerSnapshot);
+
+        final Option fetchSize = Option.builder(OPT_FETCH_SIZE_SHORT)
+                .longOpt(OPT_FETCH_SIZE)
+                .type(Integer.class)
+                .hasArg(true)
+                .required(false)
+                .desc(
+                    """
+                    The number of rows a JDBC driver retrieves from a RDBMS at once to be processed by an application, balancing network round trips and memory consumption.
+                    A higher fetch size reduces the number of database calls, improving performance when network latency is high, but consumes more memory.
+                    A lower fetch size requires more round trips to the database but uses less memory.
+                    Defaults to 1024.
+                    """)
+                .get();
+        options.addOption(fetchSize);
 
     }
 
