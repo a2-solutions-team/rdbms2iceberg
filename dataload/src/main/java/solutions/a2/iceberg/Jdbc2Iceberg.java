@@ -13,7 +13,6 @@
 
 package solutions.a2.iceberg;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Connection;
@@ -67,12 +66,12 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
             final PreparedStatement ps;
             if (StringUtils.isBlank(sourceSchema)) {
                 ps = connection.prepareStatement(
-                        "select * from \"" + sourceObject + "\""
-                        + (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
+                        "select * from " + sourceObject +
+                        (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
             } else {
                 ps = connection.prepareStatement(
-                        "select * from \"" + sourceSchema + "\".\"" + sourceObject + "\""
-                        + (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
+                        "select * from \"" + sourceSchema + "\".\"" + sourceObject + "\"" +
+                        (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
             }
             final ResultSet rs = ps.executeQuery();
             while (rs.next()) {
