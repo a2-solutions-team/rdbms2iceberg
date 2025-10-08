@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import static solutions.a2.iceberg.JdbcUtils.loadJdbcDriver;
 import static solutions.a2.iceberg.JdbcUtils.DB_TYPE_ORACLE;
 import static solutions.a2.iceberg.JdbcUtils.DB_TYPE_SQLSERVER;
+import static solutions.a2.iceberg.JdbcUtils.DB_TYPE_DB2;
 import static solutions.a2.iceberg.JdbcUtils.DB_TYPE_POSTGRESQL;
 
 /**
@@ -325,7 +326,8 @@ public class DataLoad {
             final String sourceSchema;
             if (StringUtils.isBlank(cmd.getOptionValue(OPT_ICEBERG_SOURCE_SCHEMA_SHORT))) {
                 switch (dbType) {
-                    case DB_TYPE_ORACLE -> sourceSchema = dbMetaData.getUserName();
+                    case DB_TYPE_ORACLE  -> sourceSchema = dbMetaData.getUserName();
+                    case DB_TYPE_DB2 -> sourceSchema = StringUtils.upperCase(dbMetaData.getUserName());
                     case DB_TYPE_SQLSERVER -> sourceSchema = "dbo";
                     case DB_TYPE_POSTGRESQL -> sourceSchema = "public";
                     default -> sourceSchema = null;
