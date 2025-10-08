@@ -54,7 +54,7 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
             final String sourceObject,
             final String whereClause,
             final boolean isTableOrView,
-            final boolean rowidPseudoKey) {
+            final boolean rowidPseudoKey) throws SQLException {
         super(connection, sourceSchema, sourceObject, whereClause, isTableOrView, rowidPseudoKey);
     }
 
@@ -63,16 +63,6 @@ public class Jdbc2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
             final Table table,
             final PartitionedFanoutWriter<Record> partitionedFanoutWriter,
             final Map<String, int[]> columnsMap) throws SQLException {
-            final PreparedStatement ps;
-            if (StringUtils.isBlank(sourceSchema)) {
-                ps = connection.prepareStatement(
-                        "select * from " + sourceObject +
-                        (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
-            } else {
-                ps = connection.prepareStatement(
-                        "select * from \"" + sourceSchema + "\".\"" + sourceObject + "\"" +
-                        (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
-            }
             final ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 final GenericRecord record = GenericRecord.create(table.schema());

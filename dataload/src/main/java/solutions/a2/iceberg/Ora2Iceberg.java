@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Map;
@@ -44,7 +43,6 @@ import static java.sql.Types.ROWID;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
 import static java.sql.Types.VARCHAR;
-import static solutions.a2.iceberg.DataLoad.ROWID_KEY;
 import static solutions.a2.oracle.utils.BinaryUtils.rawToHex;
 
 public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
@@ -58,7 +56,7 @@ public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
             final String sourceObject,
             final String whereClause,
             final boolean isTableOrView,
-            final boolean rowidPseudoKey) {
+            final boolean rowidPseudoKey) throws SQLException {
         super(connection, sourceSchema, sourceObject, whereClause, isTableOrView, rowidPseudoKey);
     }
 
@@ -67,17 +65,6 @@ public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
             final Table table,
             final PartitionedFanoutWriter<Record> partitionedFanoutWriter,
             final Map<String, int[]> columnsMap) throws SQLException {
-            final PreparedStatement ps;
-            if (rowidPseudoKey) {
-                ps = connection.prepareStatement(
-                        "select ROWIDTOCHAR(ROWID) " + ROWID_KEY + ", T.* from \"" + sourceSchema + "\".\"" + sourceObject + "\" T"
-                        + (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
-            } else {
-                ps = connection.prepareStatement(
-                        "select * from \"" + sourceSchema + "\".\"" + sourceObject + "\""
-                        + (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
-            }
-            final OracleResultSet rs = (OracleResultSet) ps.executeQuery();
             while (rs.next()) {
                 final GenericRecord record = GenericRecord.create(table.schema());
                 for (final Map.Entry<String, int[]> entry : columnsMap.entrySet()) {
@@ -91,7 +78,7 @@ public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
                                     rs.wasNull() ? null : dbValue);
                         }
                         case INTEGER -> {
-                            final NUMBER oraInt = rs.getNUMBER(entry.getKey());
+                            final NUMBER oraInt = getNUMBER(entry.getKey());
                             if (rs.wasNull()) {
                                 record.setField(icebergColumn, null);
                             } else {
@@ -136,7 +123,7 @@ public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
                             }
                         }
                         case BIGINT -> {
-                            final NUMBER oraLong = rs.getNUMBER(entry.getKey());
+                            final NUMBER oraLong = getNUMBER(entry.getKey());
                             if (rs.wasNull()) {
                                 record.setField(icebergColumn, null);
                             } else {
@@ -181,7 +168,7 @@ public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
                             }
                         }
                         case NUMERIC -> {
-                            final NUMBER oraNum = rs.getNUMBER(entry.getKey());
+                            final NUMBER oraNum = getNUMBER(entry.getKey());
                             if (rs.wasNull()) {
                                 record.setField(icebergColumn, null);
                             } else {
@@ -272,6 +259,10 @@ public class Ora2Iceberg extends Rdbms2IcebergBase implements Rdbms2Iceberg {
 
             rs.close();
             ps.close();
+    }
+
+    private NUMBER getNUMBER(final String columnName) throws SQLException {
+        return ((OracleResultSet)rs).getNUMBER(columnName);
     }
 
 }

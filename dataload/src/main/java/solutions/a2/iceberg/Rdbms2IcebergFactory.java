@@ -13,6 +13,7 @@
 package solutions.a2.iceberg;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 import org.apache.commons.lang3.Strings;
 
@@ -24,7 +25,7 @@ public class Rdbms2IcebergFactory {
             final String sourceObject,
             final String whereClause,
             final boolean isTableOrView,
-            final boolean rowidPseudoKey) {
+            final boolean rowidPseudoKey) throws SQLException {
         final String className = connection.getClass().getName();
         if (Strings.CS.startsWith(className, "oracle.jdbc")) {
             return new Ora2Iceberg(connection, sourceSchema, sourceObject, whereClause, isTableOrView, rowidPseudoKey);

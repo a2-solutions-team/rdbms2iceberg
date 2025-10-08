@@ -13,6 +13,12 @@
 package solutions.a2.iceberg;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.apache.commons.lang3.StringUtils;
+import static solutions.a2.iceberg.DataLoad.ROWID_KEY;
 
 public abstract class Rdbms2IcebergBase {
 
@@ -27,7 +33,8 @@ public abstract class Rdbms2IcebergBase {
     protected final String sourceObject;
     protected final String whereClause;
     protected final boolean isTableOrView;
-    protected final boolean rowidPseudoKey;
+    protected final PreparedStatement ps;
+    protected final ResultSet rs;
 
     Rdbms2IcebergBase(
             final Connection connection,
@@ -35,12 +42,27 @@ public abstract class Rdbms2IcebergBase {
             final String sourceObject,
             final String whereClause,
             final boolean isTableOrView,
-            final boolean rowidPseudoKey) {
+            final boolean rowidPseudoKey) throws SQLException {
         this.connection = connection;
         this.sourceSchema = sourceSchema;
         this.sourceObject = sourceObject;
         this.whereClause = whereClause;
         this.isTableOrView = isTableOrView;
-        this.rowidPseudoKey = rowidPseudoKey;
+        if (rowidPseudoKey) {
+            ps = connection.prepareStatement(
+                "select ROWIDTOCHAR(ROWID) " + ROWID_KEY + ", T.* from \"" + sourceSchema + "\".\"" + sourceObject + "\" T" +
+                (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
+        } else {
+            if (StringUtils.isBlank(sourceSchema)) {
+                ps = connection.prepareStatement(
+                        "select * from " + sourceObject +
+                        (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
+            } else {
+                ps = connection.prepareStatement(
+                        "select * from \"" + sourceSchema + "\".\"" + sourceObject + "\"" +
+                        (StringUtils.isBlank(whereClause) ? "" : "\n" + whereClause));
+            }
+        }
+        rs = ps.executeQuery();
     }
 }
