@@ -414,7 +414,7 @@ java -jar build/libs/ora2iceberg.jar \
 |===
 | Short | Long | Explanation | Example
 
-| `-L` | `--upload-mode` | Upload mode: `full`, `incremental`, or `merge`. *Merge is not implemented yet.* | `full`
+| `-L` | `--upload-mode` | Upload mode: `overwrite`, or `append`. | `overwrite`
 | `-d` | `--default-number-type` | Default numeric precision/scale for ambiguous `NUMBER` columns. Defaults to `decimal(38,10)`. | `decimal(10,2)`
 | `-m` | `--data-type-map` | Custom mappings from source data types to Iceberg types. | `"COLUMN_NAME:NUMBER=integer; PATTERN%:NUMBER=decimal(20,0)"`
 |===

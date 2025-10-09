@@ -82,8 +82,6 @@ public class DataLoad {
     static final String ROWID_KEY = "ORA_ROW_ID";
     static final String ROWID_ORA = "ROWID";
 
-    static final String UPLOAD_DEFAULT_MODE = "full";
-
     private static final String CATALOG_IMPL_REST = "REST";
     private static final String CATALOG_IMPL_JDBC = "JDBC";
     private static final String CATALOG_IMPL_HADOOP = "HADOOP";
@@ -141,6 +139,12 @@ public class DataLoad {
     private static final String OPT_ICEBERG_MAX_ROWS_SHORT = "M";
     private static final String OPT_FETCH_SIZE = "fetch-size";
     private static final String OPT_FETCH_SIZE_SHORT = "f";
+    private static final String OPT_UPLOAD_MODE = "upload-mode";
+    private static final String OPT_UPLOAD_MODE_SHORT = "L";
+    private static final String OPT_UPLOAD_MODE_OVWR = "overwrite";
+    private static final String OPT_UPLOAD_MODE_APND = "append";
+    private static final String OPT_UPLOAD_MODE_DEFAULT = OPT_UPLOAD_MODE_OVWR;
+
 
     @SuppressWarnings("unchecked")
     public static void main(String[] argv) {
@@ -528,49 +532,41 @@ public class DataLoad {
                 }
             }
 
-            String uploadModeValue = cmd.getOptionValue("upload-mode", UPLOAD_DEFAULT_MODE);
+            String uploadMode = cmd.getOptionValue(OPT_UPLOAD_MODE_SHORT, OPT_UPLOAD_MODE_DEFAULT);
             boolean icebergTableExists = catalog.tableExists(icebergTable);
-
-            switch (uploadModeValue.toLowerCase()) {
-                case "full":
-                    if (catalog.tableExists(icebergTable)) {
-                        LOGGER.info("Starting upload in full mode...");
-                        LOGGER.info("Dropping table {} from catalog {}", icebergTable.name(), catalog.name());
-                        if (!catalog.dropTable(icebergTable, true)) {
-                            LOGGER.error(
-                                    "\n=====================\n"
-                                    + "Unable to drop table {} from catalog {}"
-                                    + "\n=====================\n",
+            if (Strings.CI.equals(uploadMode, OPT_UPLOAD_MODE_OVWR)) {
+                LOGGER.info("Starting upload in {} mode...", OPT_UPLOAD_MODE_OVWR);
+                if (icebergTableExists) {
+                    LOGGER.info("Dropping table {} from catalog {}",
+                            icebergTable.name(), catalog.name());
+                    if (!catalog.dropTable(icebergTable, true)) {
+                        LOGGER.error(
+                                """
+                                
+                                =====================
+                                Unable to drop table {} from catalog {}
+                                =====================
+                                """,
                                     icebergTable.name(), catalog.name());
-                            System.exit(1);
-                        }
-                        icebergTableExists = false;
+                        System.exit(1);
                     }
-                    break;
-                case "incremental":
-                    LOGGER.info("Starting upload in incremental mode...");
-                    LOGGER.info("Add only data to table {} in catalog {}", icebergTable.name(), catalog.name());
-                    //TODO Check if we need additional logic for append
-                    //TODO in preProcess
-                    break;
-                case "merge":
-                    LOGGER.info("Starting upload in merge mode...");
-                    LOGGER.info("Merging data to table {} in catalog {}", icebergTable.name(), catalog.name());
-                    //TODO Check if we need additional logic for upsert
-                    //TODO Probably need to Check Primary Keys
-                    LOGGER.error(
-                            "\n=====================\n"
-                            + "Merge upload mode is Not Implemented Yet"
-                            + "\n=====================\n");
-                    System.exit(1);
-                    break;
-                default:
-                    LOGGER.error(
-                            "\n=====================\n"
-                            + "Unknown upload mode {}. Allowed full (replace), incremental (add only), merge (add/replace/delete)"
-                            + "\n=====================\n",
-                            uploadModeValue);
-                    System.exit(1);
+                    icebergTableExists = false;
+                }
+            } else if (Strings.CI.equals(uploadMode, OPT_UPLOAD_MODE_APND)) {
+                LOGGER.info("Starting upload in {} mode...", OPT_UPLOAD_MODE_APND);
+                LOGGER.info(icebergTableExists
+                    ? "The data will be appended to table {} in the catalog {}"
+                    : "A new table {} will be created in the catalog {}",
+                        icebergTable.name(), catalog.name());
+            } else {
+                LOGGER.error(
+                    """
+                    
+                    =====================
+                    Unknown upload mode {}. Allowed: 'overwrite' and 'append'
+                    =====================
+                    """,
+                        uploadMode);
             }
 
             final Set<String> idColumnNames;
@@ -864,12 +860,15 @@ public class DataLoad {
                 .get();
         options.addOption(maxFileSize);
 
-        final Option uploadMode = Option.builder("L")
-                .longOpt("upload-mode")
+        final Option uploadMode = Option.builder(OPT_UPLOAD_MODE_SHORT)
+                .longOpt(OPT_UPLOAD_MODE)
                 .hasArg(true)
-                .argName("mode")
                 .required(false)
-                .desc("Specifies the upload mode. Options: full and incremental. Default is full")
+                .desc(
+                        "Specifies the upload mode. Options: " + 
+                        OPT_UPLOAD_MODE_OVWR + " and " +
+                        OPT_UPLOAD_MODE_APND + ". Default is " + 
+                        OPT_UPLOAD_MODE_DEFAULT)
                 .get();
         options.addOption(uploadMode);
 
