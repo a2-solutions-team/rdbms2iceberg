@@ -383,11 +383,12 @@ java -jar build/libs/ora2iceberg.jar \
 | Short | Long | Explanation | Example
 
 | `-j` | `--source-jdbc-url` | RDBMS JDBC URL for the source connection. This parameter is required. | `jdbc:oracle:thin:@localhost:1521:xe`
-| `-u` | `--source-user` | RDBMS username for the source connection. | `system`
+| `-u` | `--source-user`     | RDBMS username for the source connection. | `system`
 | `-p` | `--source-password` | Password for the source RDBMS connection. | `password123`
-| `-s` | `--source-schema` | Source schema name. If not specified, the value `dbo` is used for Microsoft SQL Server, the value `public` is used for PostgreSQL, and the value of `<source-user>` is used for other supported databases. | `HR`
-| `-o` | `--source-object` | Name of the source table, view, or SQL `SELECT` query. *SQL `SELECT` is not implemented yet.* | `employees` or `SELECT * FROM employees WHERE department_id = 10`
-| `-w` | `--where-clause` | Optional `WHERE` clause for the `<source-object>`. Valid only if `<source-object>` points to a table or view. | `WHERE salary > 50000`
+| `-s` | `--source-schema`   | Source schema name. If not specified, the value `dbo` is used for Microsoft SQL Server, the value `public` is used for PostgreSQL, and the value of `<source-user>` is used for other supported databases. | `HR`
+| `-o` | `--source-object`   | Name of the source table, view, or SQL `SELECT` query. *SQL `SELECT` is not implemented yet.* | `employees` or `SELECT * FROM employees WHERE department_id = 10`
+| `-w` | `--where-clause`    | Optional `WHERE` clause for the `<source-object>`. Valid only if `<source-object>` points to a table or view. | `WHERE salary > 50000`
+| `-f` | `--fetch-size`      | The number of rows a JDBC driver retrieves from a RDBMS at once to be processed by an application, balancing network round trips and memory consumption. A higher fetch size reduces the number of database calls, improving performance when network latency is high, but consumes more memory. A lower fetch size requires more round trips to the database but uses less memory. Defaults to 1024.| `200`
 |===
 
 === Iceberg Destination Parameters
@@ -403,8 +404,8 @@ java -jar build/libs/ora2iceberg.jar \
 | `-N` | `--iceberg-namespace` | Namespace for the Iceberg catalog. Defaults to the source schema. | `db_namespace`
 | `-t` | `--iceberg-table` | Name of the destination Iceberg table. Defaults to the source object name for tables/views. | `iceberg_table_name`
 | `-P` | `--iceberg-partition` | Partitioning definitions for the Iceberg table. | `columnName=YEAR` or `columnName=BUCKET,10`
-| `-L` | `--upload-mode` | Upload mode: `full`, `incremental`, or `merge`. *Merge is not implemented yet.* | `full`
 | `-R` | `--iceberg-catalog-properties` | Additional properties for Apache Iceberg catalog implementation | `-Rs3.endpoint=http://ozone.companyname.com:9878/`
+| `-M` | `--iceberg-max-rows-per-snapshot` | The maximum number of rows in a Apache Iceberg table snapshot. This is necessary when working with large source RDBMS tables to prevent java.lang.OutOfMemoryError. Defaults to Integer.MAX_VALUE(2,147,483,647). | `1048576`
 |===
 
 === Additional Options
@@ -413,7 +414,7 @@ java -jar build/libs/ora2iceberg.jar \
 |===
 | Short | Long | Explanation | Example
 
-| `-f` | `--auto-infer-types` | Automatically infer numeric types (e.g., BIGINT vs NUMERIC). *Not implemented yet.* | `-f`
+| `-L` | `--upload-mode` | Upload mode: `full`, `incremental`, or `merge`. *Merge is not implemented yet.* | `full`
 | `-d` | `--default-number-type` | Default numeric precision/scale for ambiguous `NUMBER` columns. Defaults to `decimal(38,10)`. | `decimal(10,2)`
 | `-m` | `--data-type-map` | Custom mappings from source data types to Iceberg types. | `"COLUMN_NAME:NUMBER=integer; PATTERN%:NUMBER=decimal(20,0)"`
 |===
