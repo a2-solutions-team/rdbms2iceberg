@@ -1,4 +1,6 @@
 image:https://img.shields.io/:license-apache-blue.svg[License,link=https://raw.githubusercontent.com/averemee-si/ora2iceberg/refs/heads/main/LICENSE]
+image:https://img.shields.io/maven-central/v/solutions.a2.iceberg/dataload[link=https://search.maven.org/artifact/solutions.a2.iceberg/dataload/1.0.0/jar?eh=]
+
 
 = rdbms2iceberg Data Pipe
 

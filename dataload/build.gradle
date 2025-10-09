@@ -17,6 +17,7 @@ plugins {
 	id "maven-publish"
 	id "signing"
 	id "org.owasp.dependencycheck" version "12.1.6"
+	id "org.jreleaser" version "1.20.0"
 }
 
 java {
@@ -222,25 +223,27 @@ dependencies {
 	implementation("software.amazon.s3tables:s3-tables-catalog-for-iceberg:$s3TablesCatalog")
 
 	// https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
-	testImplementation("org.junit.jupiter:junit-jupiter-api:$jUnitVersion")
+	testImplementation("org.junit.jupiter:junit-jupiter-api:${jUnitVersion}")
 	// https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine
-	testImplementation("org.junit.jupiter:junit-jupiter-engine:$jUnitVersion")
+	testImplementation("org.junit.jupiter:junit-jupiter-engine:${jUnitVersion}")
+	// https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
+	testImplementation("org.junit.platform:junit-platform-launcher:${jUnitLauncherVersion}")
 }
 
 
 jar {
-	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 	manifest {
 		attributes "Main-Class": "solutions.a2.iceberg.DataLoad"
 	}
 }
 
 shadowJar {
-	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 	manifest {
 		attributes "Main-Class": "solutions.a2.iceberg.DataLoad"
 	}
-	zip64 true
+	zip64 = true
 }
 
 javadoc {
@@ -255,59 +258,82 @@ test {
 }
 
 publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			from components.java
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
 
-			pom {
-				name = "Ora2Iceberg"
-				packaging = "jar"
-				url = "https://github.com/averemee-si/ora2iceberg"
-				description =
-					"Transfer data from Oracle database tables, views, and query results to Apache Iceberg tables"
-				organization {
-					name = "A2 Rešitve, d.o.o."
-					url = "https://a2-solutions.eu/"
-				}
-				scm {
-					url = "https://github.com/averemee-si/ora2iceberg"
-					connection = "scm:git:https://github.com/averemee-si/ora2iceberg.git"
-					developerConnection = "scm:git:git@github.com:averemee-si/ora2iceberg.git"
-				}
-				licenses {
-					license {
-						name = "The Apache License, Version 2.0"
-						url = "https://a2-solutions.eu/licenses/apache/LICENSE.txt"
-					}
-				}
-				developers {
-					developer {
-						id = "averemee-si"
-						name = "Aleksei Veremeev"
-						email = "averemee@a2.solutions"
-						timezone = "Europe/Ljubljana"
-						organization = "A2 Rešitve, d.o.o."
-						organizationUrl = "https://a2-solutions.eu/"
-					}
-				}
-			}
-		}
-	}
+            pom {
+                name = "CLI for data transfer from relational databases to Apache Iceberg tables"
+                packaging = "jar"
+                url = "https://github.com/a2-solutions-team/rdbms2iceberg"
+                description =
+                    "Transfer data from relational database (Oracle, Microsoft SQL Server, IBM DB2 LUW, PostgreSQL, MySQL, and MariaDB) tables, views, and query results to Apache Iceberg tables"
+                organization {
+                    name = "A2 Rešitve, d.o.o."
+                    url = "https://a2.solutions/"
+                }
+                scm {
+                    url = "https://github.com/a2-solutions-team/rdbms2iceberg"
+                    connection = "scm:git:https://github.com/a2-solutions-team/rdbms2iceberg.git"
+                    developerConnection = "scm:git:git@github.com/a2-solutions-team/rdbms2iceberg.git"
+                }
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "https://a2-solutions.eu/licenses/apache/LICENSE.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "averemee-si"
+                        name = "Aleksei Veremeev"
+                        email = "averemee@a2.solutions"
+                        timezone = "Europe/Ljubljana"
+                        organization = "A2 Rešitve, d.o.o."
+                        organizationUrl = "https://a2.solutions/"
+                    }
+                }
+                inceptionYear = "2025"
+            }
+        }
+    }
 
-	repositories {
-		maven {
-			url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-			credentials {
-				username = project.hasProperty('ossrh.Username') ? project.property('ossrh.Username') : ""
-				password = project.hasProperty('ossrh.Password') ? project.property('ossrh.Password') : ""
-			}
-		}
-	}
+    repositories {
+        maven {
+            name = "LocalMavenWithChecksums"
+            url = uri(layout.buildDirectory.dir("staging-deploy"))
+        }
+    }
 }
 
-signing {
-	def signingKey = project.hasProperty('signing.Key') ? project.property('signing.Key') : ""
-	def signingPassword = project.hasProperty('signing.Password') ? project.property('signing.Password') : ""
-	useInMemoryPgpKeys(signingKey, signingPassword)
-	sign publishing.publications.mavenJava
+
+
+jreleaser {
+    project {
+        copyright = "Copyright (c) ${LocalDate.now().year} A2 Rešitve, d.o.o."
+        description = "Utility for transfer data from relational database tables, views, and query results to Apache Iceberg tables"
+    }
+    signing {
+        active = "ALWAYS"
+        armored = true
+        mode = "FILE"
+        publicKey = "../.gradle/public.key"
+        secretKey = "../.gradle/private.key"
+    }
+    deploy {
+        maven {
+             mavenCentral {
+                 sonatype {
+                     active = 'ALWAYS'
+                     url = 'https://central.sonatype.com/api/v1/publisher'
+                     stagingRepository('build/staging-deploy')
+                 }
+             }
+        }
+    }
+    release {
+        github {
+            enabled = false
+        }
+    }
 }
